@@ -2,7 +2,7 @@ import sys
 import time
 import requests
 import json
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import QThread, pyqtSignal
 
 import gig_widget
@@ -12,6 +12,7 @@ class GigScan(QThread):
     '''Циклический поиск поста с записью на тренировку (отдельный поток)'''
     result_signal = pyqtSignal(str)
     progress_signal = pyqtSignal(int)
+    success_signal = pyqtSignal()
 
     def __init__(self, parent = None, delay = 5):
         QThread.__init__(self, parent)
@@ -27,10 +28,10 @@ class GigScan(QThread):
         res = requests.get(url, params=values)
         d = json.loads(res.text)
         values['start_comment_id'] = d['response']['real_offset']
-
         enroll = 0
         result_log = ''
         while not enroll:   # Поиск, пока не найден пост с записью
+            time.sleep(3)
             res = requests.get(url, params=values)
             d = json.loads(res.text)
 
@@ -42,14 +43,16 @@ class GigScan(QThread):
             tm = time.strftime("%H:%M:%S",time.localtime())
             if enroll:
                 is_enroll = 'ЗАПИСЬ ЕСТЬ'
+                self.success_signal.emit()
             else:
                 is_enroll = 'Нет записи'
             new_result = tm + ' ' + is_enroll + '\n'
             self.result_signal.emit(new_result)
 
-            for i in range(1, 101):
-                time.sleep(0.01 * self.delay)
-                self.progress_signal.emit(i)
+            if not enroll:
+                for i in range(1, 101):
+                    time.sleep(0.01 * self.delay)
+                    self.progress_signal.emit(i)
 
 
 class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
@@ -64,6 +67,7 @@ class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
         self.thread.started.connect(self.on_started)
         self.thread.finished.connect(self.on_finished)
         self.thread.progress_signal.connect(self.show_progress)
+        self.thread.success_signal.connect(self.success_alarm)
 
     def start_scan(self):
         if self.radioButton.isChecked():
@@ -95,6 +99,13 @@ class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
 
     def show_progress(self, progress):
         self.progressBar.setValue(progress)
+
+    def success_alarm(self):
+        pal = self.palette()
+        pal.setColor(QtGui.QPalette.Window, QtGui.QColor('#9ACD32'))
+        self.setPalette(pal)
+        self.showNormal()
+        self.activateWindow()
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
