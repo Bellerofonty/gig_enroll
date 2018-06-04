@@ -71,13 +71,13 @@ class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
 
     def start_scan(self):
         if self.radioButton.isChecked():
-            self.thread.delay = 1
+            self.thread.delay = 60
         elif self.radioButton_2.isChecked():
-            self.thread.delay = 2
+            self.thread.delay = 120
         elif self.radioButton_3.isChecked():
-            self.thread.delay = 5
+            self.thread.delay = 300
         elif self.radioButton_4.isChecked():
-            self.thread.delay = 10
+            self.thread.delay = 600
         self.btn_stop.setEnabled(True)
         self.thread.start()
 
