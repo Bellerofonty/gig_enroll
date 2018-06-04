@@ -7,23 +7,10 @@ from PyQt5.QtCore import QThread, pyqtSignal
 
 import gig_widget
 
-##print(time.ctime(1365439969))
-##print(time.time())
-
-
-##class Delay(QThread):
-####    def __init__(self):
-####        super.__init__(self)
-##
-##    def run(self):
-####        pass
-##        time.sleep(5)
-##        print('hello')
 
 class GigScan(QThread):
     '''Циклический поиск поста с записью на тренировку (отдельный поток)'''
     result_signal = pyqtSignal(str)
-##    window.btn_stop.clicked.connect(QThread.yieldCurrentThread())
 
     def __init__(self, parent = None, delay = 5):
         QThread.__init__(self, parent)
@@ -47,20 +34,16 @@ class GigScan(QThread):
 
             for i in d['response']['items']:
                 if i['from_id'] == -10916742:
-        ##            print('>>', i['text'], '\n')
                     if 'состоится учебный выход' in i['text']:
                         enroll = 1
 
             tm = time.strftime("%H:%M:%S",time.localtime())
             if enroll:
-##                print(tm, 'ЗАПИСЬ ЕСТЬ')
                 is_enroll = 'ЗАПИСЬ ЕСТЬ'
             else:
-##                print(tm, 'Нет записи')
                 is_enroll = 'Нет записи'
             self.result_signal.emit(tm+' '+is_enroll)
 
-        ##    print('_______________')
             time.sleep(self.delay)
             values['start_comment_id'] -= 1
 
