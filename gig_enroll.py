@@ -28,6 +28,7 @@ class GigScan(QThread):
         values['start_comment_id'] = d['response']['real_offset']
 
         enroll = 0
+        result_log = ''
         while not enroll:   # Поиск, пока не найден пост с записью
             res = requests.get(url, params=values)
             d = json.loads(res.text)
@@ -42,7 +43,8 @@ class GigScan(QThread):
                 is_enroll = 'ЗАПИСЬ ЕСТЬ'
             else:
                 is_enroll = 'Нет записи'
-            self.result_signal.emit(tm+' '+is_enroll)
+            new_result = tm + ' ' + is_enroll + '\n'
+            self.result_signal.emit(new_result)
 
             time.sleep(self.delay)
             values['start_comment_id'] -= 1
@@ -77,7 +79,8 @@ class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
         self.on_finished()
 
     def show_result(self, result):
-        self.label.setText(result)
+        self.log.textCursor().insertText(result)
+        self.log.ensureCursorVisible()
 
     def on_started(self):
         self.btn_start.setDisabled(True)
