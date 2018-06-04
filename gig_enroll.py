@@ -11,6 +11,7 @@ import gig_widget
 class GigScan(QThread):
     '''Циклический поиск поста с записью на тренировку (отдельный поток)'''
     result_signal = pyqtSignal(str)
+    progress_signal = pyqtSignal(int)
 
     def __init__(self, parent = None, delay = 5):
         QThread.__init__(self, parent)
@@ -46,7 +47,10 @@ class GigScan(QThread):
             new_result = tm + ' ' + is_enroll + '\n'
             self.result_signal.emit(new_result)
 
-            time.sleep(self.delay)
+            for i in range(1, 101):
+                time.sleep(0.01 * self.delay)
+                self.progress_signal.emit(i)
+
             values['start_comment_id'] -= 1
 
 
@@ -61,6 +65,7 @@ class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
         self.thread.result_signal.connect(self.show_result)
         self.thread.started.connect(self.on_started)
         self.thread.finished.connect(self.on_finished)
+        self.thread.progress_signal.connect(self.show_progress)
 
     def start_scan(self):
         if self.radioButton.isChecked():
@@ -88,6 +93,10 @@ class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
     def on_finished(self):
         self.btn_start.setDisabled(False)
         self.btn_stop.setDisabled(True)
+        self.progressBar.reset()
+
+    def show_progress(self, progress):
+        self.progressBar.setValue(progress)
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
