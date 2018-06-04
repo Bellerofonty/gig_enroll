@@ -34,6 +34,12 @@ class GigScan(QThread):
         with open('values.txt', 'r', encoding='utf-8') as f:
             values = json.load(f)
 
+        # Получение номера последнего комментария в теме
+        values['start_comment_id'] = 1000000
+        res = requests.get(url, params=values)
+        d = json.loads(res.text)
+        values['start_comment_id'] = d['response']['real_offset']
+
         enroll = 0
         while not enroll:   # Поиск, пока не найден пост с записью
             res = requests.get(url, params=values)
