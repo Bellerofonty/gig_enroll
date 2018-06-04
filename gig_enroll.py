@@ -51,8 +51,6 @@ class GigScan(QThread):
                 time.sleep(0.01 * self.delay)
                 self.progress_signal.emit(i)
 
-            values['start_comment_id'] -= 1
-
 
 class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
     '''GUI и управление потоком поиска'''
