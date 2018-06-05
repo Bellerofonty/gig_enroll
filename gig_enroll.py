@@ -19,25 +19,31 @@ class GigScan(QThread):
         self.delay = delay
 
     def run(self):
+        '''Получает последний комментарий в теме по номеру, взятому с запасом.
+        По его номеру минус n получает следующие values['count']=40 комментариев
+        с периодичностью delay, полученной из gui. Сканирует их, сигнализирует
+        в gui о результатах.
+        '''
         url = 'https://api.vk.com/method/board.getComments?'
         with open('values.txt', 'r', encoding='utf-8') as f:
-            values = json.load(f)
+            values = json.load(f)    # Данные запроса из файла
 
         # Получение номера последнего комментария в теме
         values['start_comment_id'] = 1000000
         res = requests.get(url, params=values)
         d = json.loads(res.text)
-        values['start_comment_id'] = d['response']['real_offset']
+        # n - Поправка на случай, когда новых комментариев несколько
+        n = 10
+        values['start_comment_id'] = d['response']['real_offset'] - n
+##        values['start_comment_id'] = 16122
         enroll = 0
-        result_log = ''
         while not enroll:   # Поиск, пока не найден пост с записью
-            time.sleep(3)
             res = requests.get(url, params=values)
             d = json.loads(res.text)
 
             for i in d['response']['items']:
                 if i['from_id'] == -10916742:
-                    if 'состоится учебный выход' in i['text']:
+                    if 'чебный выход' or 'Запись в этой теме' in i['text']:
                         enroll = 1
 
             tm = time.strftime("%H:%M:%S",time.localtime())
@@ -50,7 +56,7 @@ class GigScan(QThread):
             self.result_signal.emit(new_result)
 
             if not enroll:
-                for i in range(1, 101):
+                for i in range(1, 101): # Обновление индикатора времени ожидания
                     time.sleep(0.01 * self.delay)
                     self.progress_signal.emit(i)
 
@@ -62,7 +68,7 @@ class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
         self.setupUi(self)
         self.btn_start.clicked.connect(self.start_scan)
         self.btn_stop.clicked.connect(self.stop_scan)
-        self.thread = GigScan()
+        self.thread = GigScan() # Поиск в отдельном потоке
         self.thread.result_signal.connect(self.show_result)
         self.thread.started.connect(self.on_started)
         self.thread.finished.connect(self.on_finished)
@@ -70,6 +76,7 @@ class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
         self.thread.success_signal.connect(self.success_alarm)
 
     def start_scan(self):
+        # Выбор задержки между запросами в секундах
         if self.radioButton.isChecked():
             self.thread.delay = 60
         elif self.radioButton_2.isChecked():
@@ -86,6 +93,7 @@ class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
         self.on_finished()
 
     def show_result(self, result):
+        '''Добавляет запись в лог и проматывает его вниз'''
         self.log.textCursor().insertText(result)
         self.log.ensureCursorVisible()
 
@@ -101,6 +109,7 @@ class GigApp(QtWidgets.QWidget, gig_widget.Ui_Form):
         self.progressBar.setValue(progress)
 
     def success_alarm(self):
+        '''Окно меняет цвет фона, разворачивается, всплывает'''
         pal = self.palette()
         pal.setColor(QtGui.QPalette.Window, QtGui.QColor('#9ACD32'))
         self.setPalette(pal)
